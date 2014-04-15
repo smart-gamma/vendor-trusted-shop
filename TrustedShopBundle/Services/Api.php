@@ -3,6 +3,7 @@
 namespace Gamma\TrustedShop\TrustedShopBundle\Services;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Doctrine\Common\Cache\CacheProvider;
 
 use Localdev\FrameworkExtraBundle\Services\LoggerService;
 
@@ -43,11 +44,25 @@ class Api extends LoggerService
      * @var int
      */
     protected $maxRank = 5;
+
+    /**
+     * Cache driver
+     *
+     * @var \Doctrine\Common\Cache\CacheProvider
+     */
+    protected $cache;
+
+    /**
+     * Cache time out (default 12 hours)
+     *
+     * @var int
+     */
+    protected $cacheTimeOut = 43200;
     
     /**
      * {@inheritDoc}
      */
-    public function __construct(ContainerInterface $container)
+    public function __construct(ContainerInterface $container,CacheProvider $cache)
     {
         parent::__construct($container);
         
@@ -55,9 +70,11 @@ class Api extends LoggerService
         $this->host = $container->getParameter('gamma.trusted_shop.config.host');
         $this->path = $container->getParameter('gamma.trusted_shop.config.path');
         $this->version = $container->getParameter('gamma.trusted_shop.config.api_version');
-        $this->TSID = $container->getParameter('gamma.trusted_shop.config.TSID');
-        $this->maxRank = $container->getParameter('gamma.trusted_shop.config.maxRank');
+        $this->tsid = $container->getParameter('gamma.trusted_shop.config.tsid');
+        $this->maxRank = $container->getParameter('gamma.trusted_shop.config.max_rank');
+        $this->cacheTimeOut = $container->getParameter('gamma.trusted_shop.config.cache_timeout');
         
+        $this->cache = $cache;
         $this->container = $container;
     }
 
@@ -69,7 +86,7 @@ class Api extends LoggerService
     public function reviewAggregation()
     {
         $data = array();
-        $apiUrl = $this->scheme.'://'.$this->host.'/'.$this->path.'ratings/v'.$this->version.'/'.$this->TSID.'.xml';
+        $apiUrl = $this->scheme.'://'.$this->host.'/'.$this->path.'ratings/v'.$this->version.'/'.$this->tsid.'.xml';
         $string = $this->call($apiUrl);
  
         if ($xml = simplexml_load_string($string)) {
@@ -84,10 +101,18 @@ class Api extends LoggerService
         return $data;
     }
     
+    /**
+     * Request to api
+     * @param type $apiUrl
+     * @return string
+     */
     private function call($apiUrl)
     {
-        // check if cached version exists
-        //if (!cachecheck($cacheFileName, $cacheTimeOut)) {
+        $id = $this->getCachePath($apiUrl);
+
+        if ($this->cache->contains($id)) {
+            $output = $this->cache->fetch($id);  
+        } else {    
             // load fresh from API
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_HEADER, false);
@@ -97,12 +122,20 @@ class Api extends LoggerService
 
             $output = curl_exec($ch);
             curl_close($ch);
-
-            // Write the contents back to the file
-            // Make sure you can write to file's destination
-            //file_put_contents($cacheFileName, $output);
-        //} 
+            
+            $this->cache->save($id, $output, $this->cacheTimeOut);
+        } 
         
         return $output;
+    }
+    
+    /**
+     * Get cache storage id
+     * @param type $apiUrl
+     * @return string
+     */
+    private function getCachePath($apiUrl)
+    {
+        return self::REVIEW_PROVIDER.'_'.md5($apiUrl);
     }
 }
