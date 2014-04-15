@@ -23,7 +23,34 @@ class Configuration implements ConfigurationInterface
         // Here you should define the parameters that are allowed to
         // configure your bundle. See the documentation linked above for
         // more information on that topic.
-
+		$rootNode
+            ->children()
+				->scalarNode('scheme')
+					->defaultValue('http')
+					->cannotBeEmpty()
+				->end()
+				->scalarNode('host')
+					->defaultValue('www.trustedshops.com')
+					->cannotBeEmpty()
+				->end()
+				->scalarNode('path')
+					->defaultValue('api/')
+					->cannotBeEmpty()
+				->end()
+				->scalarNode('api_version')
+					->defaultValue('1')
+					->cannotBeEmpty()
+				->end()
+				->scalarNode('maxRank')
+					->defaultValue('5')
+					->cannotBeEmpty()
+				->end()            
+				->scalarNode('TSID')
+					->isRequired()
+				->end()
+			->end()
+        ;
+        
         return $treeBuilder;
     }
 }

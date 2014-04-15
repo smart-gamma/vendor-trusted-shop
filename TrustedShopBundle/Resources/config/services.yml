@@ -1,0 +1,15 @@
+services:
+    gamma.trusted_shop.api:
+        class: Gamma\TrustedShop\TrustedShopBundle\Services\Api
+        arguments: [@service_container]
+    gamma.trusted_shop.manager:
+        class: Gamma\TrustedShop\TrustedShopBundle\Services\TrustedShopManager
+        arguments: [@service_container, null, @gamma.trusted_shop.api]
+    gamma.trusted_shop.kernel.request.listener:
+        class: Gamma\TrustedShop\TrustedShopBundle\Listener\KernelEvents
+        arguments: [@service_container]
+        tags:
+            -
+                name: kernel.event_listener
+                event: kernel.request
+                method: onKernelRequest        
