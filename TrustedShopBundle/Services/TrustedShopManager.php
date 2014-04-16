@@ -35,8 +35,6 @@ class TrustedShopManager extends LoggerService
 
     /**
      * Get trusted shop review aggregation
-     *
-     * @param Image $image  Image to process
      */
     public function getReviewAggregation()
     {
@@ -47,4 +45,17 @@ class TrustedShopManager extends LoggerService
             $this->getLogger()->addError($ex);
         }
     }
+    
+    /**
+     * Get trusted shop reviews 
+     */
+    public function getReviews()
+    {
+        try {
+            $reviews = $this->api->reviews();
+            return $reviews;
+        } catch (\Exception $ex) {
+            $this->getLogger()->addError($ex);
+        }
+    }    
 }

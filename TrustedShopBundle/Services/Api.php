@@ -100,6 +100,34 @@ class Api extends LoggerService
 
         return $data;
     }
+
+    /**
+     * Load aggregated reviews data
+     *
+     * @return array
+     */
+    public function reviews()
+    {
+        $reviews = array();
+        $apiUrl = $this->scheme.'://'.$this->host.'/'.$this->path.'ratings/v'.$this->version.'/'.$this->tsid.'.xml';
+        $xmlString = $this->call($apiUrl);
+ 
+        if ($xml = simplexml_load_string($xmlString, 'SimpleXMLElement', LIBXML_NOCDATA)) {               
+            $xPath = "ratings/opinions/opinion";
+            $options =  $xml -> xpath($xPath);
+            $i = 0;
+            foreach($options as $option) {
+                $reviews[$i]['rating'] = (int)$option->rating[0];
+                $reviews[$i]['comment'] = trim((string)$option->comment);
+                $reviews[$i]['date'] = (string)$option->date;
+                $reviews[$i]['reply'] = trim((string)$option->reaction->reply);
+                $reviews[$i]['provider'] = self::REVIEW_PROVIDER;
+                $i++;
+            }
+        }
+
+        return $reviews;
+    }
     
     /**
      * Request to api
